@@ -356,7 +356,7 @@
   }
 
   function renderPreview(){
-    const text = document.getElementById('text-input').value.trim();
+    const text = document.getElementById('text-input').value.trimEnd();
     const paper = document.getElementById('preview-paper');
     const note  = document.getElementById('page-note');
     const [pw,ph] = PAPERS[currentPaper];
@@ -383,7 +383,7 @@
     const nombruBottom = (pBtm * 0.45).toFixed(2);
     const nombru = `<div class="nombru" style="bottom:${nombruBottom}%">${pageNum}</div>`;
 
-    if(!text){
+    if(!text.trim()){
       paper.innerHTML = nodoBand + '<span class="preview-empty">本文を入力すると<br>ここに縦書きで表示されます</span>';
       note.textContent='';
       return;
@@ -556,4 +556,3 @@
 </script>
 </body>
 </html>
-
