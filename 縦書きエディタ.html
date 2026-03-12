@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>縦書きエディタ</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@300;400;500&family=Shippori+Mincho:wght@400;500&family=Zen+Old+Mincho:wght@400;500&display=swap');
+  :root {
+    --bg:#f0eef6; --paper:#faf9fd; --ink:#1a1520; --ink-light:#5a4e6e;
+    --accent:#6b4fa0; --accent-soft:#a585cc; --border:#cdc5e0; --shadow:rgba(50,35,80,0.12);
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    background-image:radial-gradient(ellipse at 20% 50%,rgba(120,90,180,.08) 0%,transparent 60%),
+      radial-gradient(ellipse at 80% 20%,rgba(100,70,160,.06) 0%,transparent 50%);
+    min-height:100vh; font-family:'Shippori Mincho','Yu Mincho',serif;
+    color:var(--ink); display:flex; flex-direction:column; align-items:center;
+  }
+  header{width:100%;max-width:960px;padding:20px 24px 0;display:flex;align-items:baseline;gap:12px;}
+  header h1{font-size:18px;font-weight:300;letter-spacing:.2em;color:var(--ink-light);}
+  header .subtitle{font-size:11px;color:var(--accent-soft);letter-spacing:.1em;}
+
+  .toolbar{width:100%;max-width:960px;padding:12px 24px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+  .tab-group,.col-toggle,.bind-toggle{display:flex;background:var(--paper);border:1px solid var(--border);border-radius:6px;overflow:hidden;}
+  .tab-btn,.col-btn,.bind-btn{padding:7px 16px;font-family:inherit;font-size:13px;letter-spacing:.08em;border:none;background:transparent;color:var(--ink-light);cursor:pointer;transition:all .2s;}
+  .col-btn,.bind-btn{padding:7px 13px;font-size:12px;}
+  .tab-btn.active,.col-btn.active,.bind-btn.active{background:var(--accent);color:#fff;}
+  .tab-btn:not(.active):hover,.col-btn:not(.active):hover,.bind-btn:not(.active):hover{background:var(--border);}
+
+  .sel{padding:6px 28px 6px 10px;font-family:inherit;font-size:13px;border:1px solid var(--border);border-radius:6px;background:var(--paper);color:var(--ink-light);cursor:pointer;outline:none;-webkit-appearance:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%235a4e42'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;transition:border-color .2s;}
+  .sel:focus{border-color:var(--accent-soft);}
+
+  .size-controls{display:none;gap:5px;align-items:center;}
+  .size-btn{width:28px;height:28px;border:1px solid var(--border);background:var(--paper);border-radius:4px;font-family:inherit;font-size:14px;color:var(--ink-light);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;}
+  .size-btn:hover{background:var(--border);}
+  .size-btn:active{background:var(--accent);color:#fff;}
+  .size-label{font-size:12px;color:var(--ink-light);min-width:28px;text-align:center;}
+
+  .layout-btn{padding:7px 13px;font-family:inherit;font-size:12px;letter-spacing:.06em;border:1px solid var(--border);border-radius:6px;background:var(--paper);color:var(--ink-light);cursor:pointer;transition:all .2s;display:none;white-space:nowrap;}
+  .layout-btn:hover{background:var(--border);}
+  .layout-btn.open{background:var(--accent);color:#fff;border-color:var(--accent);}
+
+  /* ファイルメニュー */
+  .file-menu-wrap{position:relative;}
+  .file-btn{padding:7px 13px;font-family:inherit;font-size:12px;letter-spacing:.06em;border:1px solid var(--border);border-radius:6px;background:var(--paper);color:var(--ink-light);cursor:pointer;transition:all .2s;white-space:nowrap;}
+  .file-btn:hover{background:var(--border);}
+  .file-btn.open{background:var(--accent);color:#fff;border-color:var(--accent);}
+  .file-dropdown{display:none;position:absolute;top:calc(100% + 4px);left:0;background:var(--paper);border:1px solid var(--border);border-radius:6px;box-shadow:0 4px 12px var(--shadow);z-index:100;min-width:140px;overflow:hidden;}
+  .file-dropdown.open{display:block;}
+  .file-item{display:block;width:100%;padding:9px 14px;font-family:inherit;font-size:12px;letter-spacing:.05em;border:none;background:transparent;color:var(--ink-light);cursor:pointer;text-align:left;transition:background .15s;}
+  .file-item:hover{background:var(--border);}
+  .file-sep{height:1px;background:var(--border);margin:2px 0;}
+
+  
+  .counter{font-size:12px;color:var(--ink-light);padding:6px 12px;background:var(--paper);border:1px solid var(--border);border-radius:6px;white-space:nowrap;}
+  .counter span{color:var(--accent);font-weight:500;}
+
+  /* 用紙設定パネル */
+  .layout-panel{display:none;width:100%;max-width:960px;padding:0 24px 4px;}
+  .layout-panel.open{display:block;}
+  .layout-panel-inner{background:var(--paper);border:1px solid var(--border);border-radius:8px;padding:16px 18px;display:flex;flex-wrap:wrap;gap:16px 20px;align-items:flex-end;}
+  .lp-group{display:flex;flex-direction:column;gap:6px;}
+  .lp-label{font-size:10px;letter-spacing:.1em;color:var(--accent-soft);}
+  .lp-row{display:flex;align-items:center;gap:6px;}
+
+  /* スライダー */
+  .cm-slider{-webkit-appearance:none;appearance:none;width:80px;height:4px;background:var(--border);border-radius:2px;outline:none;cursor:pointer;flex-shrink:0;}
+  .cm-slider::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--accent);cursor:pointer;}
+
+  /* 数字入力 */
+  .cm-input{width:52px;padding:4px 6px;font-family:inherit;font-size:12px;border:1px solid var(--border);border-radius:4px;background:var(--paper);color:var(--ink);text-align:right;outline:none;-webkit-appearance:none;appearance:none;}
+  .cm-input:focus{border-color:var(--accent-soft);}
+  .cm-unit{font-size:11px;color:var(--ink-light);}
+
+  .lp-sep{width:1px;height:52px;background:var(--border);margin:0 4px;align-self:center;}
+
+  /* メイン */
+  .main{width:100%;max-width:960px;padding:0 24px 40px;flex:1;}
+  .panel{display:none;width:100%;}
+  .panel.active{display:block;}
+
+  #text-input{width:100%;min-height:65vh;padding:28px 32px;background:var(--paper);border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:16px;line-height:2;color:var(--ink);resize:vertical;outline:none;box-shadow:0 2px 12px var(--shadow);transition:border-color .2s;-webkit-appearance:none;}
+  #text-input:focus{border-color:var(--accent-soft);box-shadow:0 2px 12px var(--shadow),0 0 0 3px rgba(107,79,160,.1);}
+  #text-input::placeholder{color:var(--border);font-size:14px;line-height:2.5;}
+
+  #preview-panel{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+
+  .preview-paper{background:var(--paper);border:1px solid var(--border);border-radius:4px;box-shadow:0 4px 20px var(--shadow),0 1px 4px rgba(0,0,0,.08);width:100%;max-width:680px;margin:0 auto;aspect-ratio:210/297;position:relative;overflow:hidden;}
+
+  .nodo-band{position:absolute;top:0;bottom:0;pointer-events:none;z-index:1;}
+  .nodo-band.left{left:0;background:rgba(107,79,160,.07);border-right:1px dashed rgba(107,79,160,.25);}
+  .nodo-band.right{right:0;background:rgba(107,79,160,.07);border-left:1px dashed rgba(107,79,160,.25);}
+
+  .text-area{position:absolute;}
+  .layout-1col{width:100%;height:100%;overflow:hidden;}
+  .layout-2col{width:100%;height:100%;display:flex;flex-direction:column;position:relative;}
+  .layout-2col::after{content:'';position:absolute;left:0;right:0;top:50%;height:1px;background:rgba(180,160,130,.4);}
+  .col-half{flex:1;width:100%;overflow:hidden;}
+  .col-half:first-child{padding-bottom:2%;}
+  .col-half:last-child{padding-top:2%;}
+
+  .tategaki{writing-mode:vertical-rl;text-orientation:mixed;line-height:2;color:var(--ink);white-space:pre-wrap;word-break:break-all;overflow-wrap:break-word;line-break:strict;hanging-punctuation:allow-end;width:100%;height:100%;overflow:hidden;}
+
+  .preview-empty{writing-mode:horizontal-tb;color:var(--border);font-size:13px;letter-spacing:.15em;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;line-height:2.2;white-space:nowrap;z-index:2;}
+
+  /* ノンブル：地の余白内に確実に収める */
+  .nombru{position:absolute;left:50%;transform:translateX(-50%);font-size:.72em;letter-spacing:.15em;color:var(--ink-light);writing-mode:horizontal-tb;font-family:'Shippori Mincho',serif;user-select:none;z-index:2;white-space:nowrap;}
+
+  .page-note{text-align:center;font-size:11px;color:var(--border);margin-top:10px;letter-spacing:.08em;line-height:1.8;}
+
+  footer{width:100%;max-width:960px;padding:0 24px 20px;text-align:right;font-size:11px;color:var(--border);letter-spacing:.1em;}
+
+  .print-btn{padding:7px 13px;font-family:inherit;font-size:12px;letter-spacing:.06em;border:1px solid var(--accent-soft);border-radius:6px;background:var(--paper);color:var(--accent);cursor:pointer;transition:all .2s;display:none;white-space:nowrap;}
+  .print-btn:hover{background:var(--accent);color:#fff;border-color:var(--accent);}
+
+  @media print{
+    header,footer,.toolbar,.layout-panel,.page-note{display:none!important;}
+    body{background:white!important;background-image:none!important;}
+    .main{padding:0!important;}
+    #editor-panel{display:none!important;}
+    #preview-panel{display:block!important;overflow:visible!important;}
+    .preview-paper{box-shadow:none!important;border:none!important;border-radius:0!important;max-width:100%!important;width:100%!important;}
+    .nodo-band{display:none!important;}
+  }
+    header{padding:16px 16px 0;}
+    .toolbar{padding:10px 16px;gap:6px;}
+    .main{padding:0 16px 32px;}
+    .layout-panel{padding:0 16px 4px;}
+    #text-input{font-size:15px;padding:20px 18px;min-height:55vh;}
+    .tab-btn{padding:6px 12px;font-size:12px;}
+    .col-btn,.bind-btn{padding:6px 10px;font-size:11px;}
+    .cm-slider{width:60px;}
+    .lp-sep{display:none;}
+  }
+  #preview-panel::-webkit-scrollbar{height:4px;}
+  #preview-panel::-webkit-scrollbar-track{background:var(--bg);}
+  #preview-panel::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>縦書きエディタ</h1>
+  <span class="subtitle">和文用</span>
+</header>
+
+<div class="toolbar">
+  <div class="tab-group">
+    <button class="tab-btn active" id="btn-edit" onclick="switchTab('edit')">編集</button>
+    <button class="tab-btn" id="btn-preview" onclick="switchTab('preview')">縦書き</button>
+  </div>
+  <div class="col-toggle" id="col-toggle" style="display:none;">
+    <button class="col-btn active" id="col-btn-1" onclick="setColumns(1)">1段</button>
+    <button class="col-btn" id="col-btn-2" onclick="setColumns(2)">2段</button>
+  </div>
+  <div class="bind-toggle" id="bind-toggle" style="display:none;">
+    <button class="bind-btn active" id="bind-right" onclick="setBinding('right')">右綴じ</button>
+    <button class="bind-btn" id="bind-left" onclick="setBinding('left')">左綴じ</button>
+  </div>
+  <select class="sel" id="font-select" onchange="changeFont(this.value)">
+    <option value="shippori">しっぽり明朝</option>
+    <option value="noto">Noto Serif JP</option>
+    <option value="zen">Zen Old Mincho</option>
+    <option value="yu">游明朝</option>
+  </select>
+  <select class="sel" id="paper-select" onchange="changePaper(this.value)" style="display:none;">
+    <option value="A4">A4</option>
+    <option value="B5">B5</option>
+    <option value="A5">A5</option>
+    <option value="B6">B6</option>
+  </select>
+  <div class="size-controls" id="size-ctrl">
+    <button class="size-btn" onclick="changeSize(-1)">－</button>
+    <span class="size-label" id="size-label">16</span>
+    <button class="size-btn" onclick="changeSize(1)">＋</button>
+  </div>
+  <button class="layout-btn" id="layout-btn" onclick="toggleLayoutPanel()">余白・ノド ▾</button>
+  <div class="file-menu-wrap">
+    <button class="file-btn" id="file-btn" onclick="toggleFileMenu()">ファイル ▾</button>
+    <div class="file-dropdown" id="file-dropdown">
+      <button class="file-item" onclick="loadText()">📂 テキスト読み込み</button>
+      <button class="file-item" onclick="saveText()">💾 テキスト保存</button>
+      <div class="file-sep"></div>
+      <button class="file-item" onclick="saveToStorage()">🔒 ブラウザに保存</button>
+      <button class="file-item" onclick="loadFromStorage()">📖 ブラウザから読込</button>
+      <button class="file-item" onclick="clearStorage()">🗑 保存データ削除</button>
+    </div>
+  </div>
+  <input type="file" id="file-input" accept=".txt" style="display:none" onchange="onFileSelected(this)">
+
+  <div class="spacer"></div>
+  <button class="print-btn" id="print-btn" onclick="printPreview()">PDF保存</button>
+  <div class="counter"><span id="char-count">0</span> 字</div>
+</div>
+
+<!-- 用紙設定パネル -->
+<div class="layout-panel" id="layout-panel">
+  <div class="layout-panel-inner">
+
+    <div class="lp-group">
+      <span class="lp-label">天（上）</span>
+      <div class="lp-row">
+        <input type="range" class="cm-slider" id="m-top" min="5" max="40" value="15" step="1" oninput="syncFromSlider('top')">
+        <input type="number" class="cm-input" id="n-top" min="0.5" max="4.0" value="1.5" step="0.1" onchange="syncFromInput('top')">
+        <span class="cm-unit">cm</span>
+      </div>
+    </div>
+
+    <div class="lp-group">
+      <span class="lp-label">地（下）</span>
+      <div class="lp-row">
+        <input type="range" class="cm-slider" id="m-btm" min="5" max="40" value="15" step="1" oninput="syncFromSlider('btm')">
+        <input type="number" class="cm-input" id="n-btm" min="0.5" max="4.0" value="1.5" step="0.1" onchange="syncFromInput('btm')">
+        <span class="cm-unit">cm</span>
+      </div>
+    </div>
+
+    <div class="lp-sep"></div>
+
+    <div class="lp-group">
+      <span class="lp-label">ノド（綴じ側）</span>
+      <div class="lp-row">
+        <input type="range" class="cm-slider" id="m-nodo" min="5" max="50" value="20" step="1" oninput="syncFromSlider('nodo')">
+        <input type="number" class="cm-input" id="n-nodo" min="0.5" max="5.0" value="2.0" step="0.1" onchange="syncFromInput('nodo')">
+        <span class="cm-unit">cm</span>
+      </div>
+    </div>
+
+    <div class="lp-group">
+      <span class="lp-label">小口（外側）</span>
+      <div class="lp-row">
+        <input type="range" class="cm-slider" id="m-kogu" min="5" max="40" value="15" step="1" oninput="syncFromSlider('kogu')">
+        <input type="number" class="cm-input" id="n-kogu" min="0.5" max="4.0" value="1.5" step="0.1" onchange="syncFromInput('kogu')">
+        <span class="cm-unit">cm</span>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="main">
+  <div class="panel active" id="editor-panel">
+    <textarea id="text-input"
+      placeholder="ここに本文を入力してください。&#xa;&#xa;「縦書き」タブで縦書きプレビューが確認できます。"
+      oninput="syncPreview();"></textarea>
+  </div>
+  <div class="panel" id="preview-panel">
+    <div class="preview-paper" id="preview-paper"></div>
+    <p class="page-note" id="page-note"></p>
+  </div>
+</div>
+
+<footer>縦書きエディタ</footer>
+
+<script>
+  const FONTS = {
+    shippori:"'Shippori Mincho','Yu Mincho',serif",
+    noto:"'Noto Serif JP',serif",
+    zen:"'Zen Old Mincho',serif",
+    yu:"'Yu Mincho','YuMincho','游明朝',serif",
+  };
+  const PAPERS = {A4:[210,297],B5:[182,257],A5:[148,210],B6:[128,182]};
+
+  let currentFont='shippori', fontSize=16, columns=1;
+  let currentTab='edit', currentPaper='A4', binding='right';
+  let pageNum=1, layoutOpen=false;
+
+  // 余白 mm（スライダー値=mm×10 → cm単位は /10）
+  let mg = {top:15, btm:15, nodo:20, kogu:15};
+
+  // スライダー → 数字入力へ同期
+  function syncFromSlider(key) {
+    mg[key] = parseInt(document.getElementById('m-'+key).value);
+    document.getElementById('n-'+key).value = (mg[key]/10).toFixed(1);
+    renderPreview();
+  }
+  // 数字入力 → スライダーへ同期
+  function syncFromInput(key) {
+    let cm = parseFloat(document.getElementById('n-'+key).value);
+    const maxMap = {top:4.0,btm:4.0,nodo:5.0,kogu:4.0};
+    cm = Math.max(0.5, Math.min(maxMap[key], isNaN(cm)?1.5:cm));
+    cm = Math.round(cm*10)/10;
+    document.getElementById('n-'+key).value = cm.toFixed(1);
+    mg[key] = Math.round(cm*10);
+    document.getElementById('m-'+key).value = mg[key];
+    renderPreview();
+  }
+
+  function toggleLayoutPanel() {
+    layoutOpen = !layoutOpen;
+    document.getElementById('layout-panel').classList.toggle('open', layoutOpen);
+    document.getElementById('layout-btn').classList.toggle('open', layoutOpen);
+    document.getElementById('layout-btn').textContent = layoutOpen ? '余白・ノド ▴' : '余白・ノド ▾';
+  }
+
+  function changeFont(val) {
+    currentFont = val;
+    document.getElementById('text-input').style.fontFamily = FONTS[val];
+    renderPreview();
+  }
+  function changeSize(delta) {
+    fontSize = Math.max(8, Math.min(28, fontSize+delta));
+    document.getElementById('size-label').textContent = fontSize;
+    renderPreview();
+  }
+  function changePaper(val) {
+    currentPaper = val;
+    const [w,h] = PAPERS[val];
+    document.getElementById('preview-paper').style.aspectRatio = `${w}/${h}`;
+    renderPreview();
+  }
+  function setColumns(n) {
+    columns = n;
+    document.getElementById('col-btn-1').classList.toggle('active', n===1);
+    document.getElementById('col-btn-2').classList.toggle('active', n===2);
+    renderPreview();
+  }
+  function setBinding(dir) {
+    binding = dir;
+    document.getElementById('bind-right').classList.toggle('active', dir==='right');
+    document.getElementById('bind-left').classList.toggle('active', dir==='left');
+    renderPreview();
+  }
+
+  function switchTab(tab) {
+    currentTab = tab;
+    const p = tab==='preview';
+    document.getElementById('editor-panel').classList.toggle('active',!p);
+    document.getElementById('preview-panel').classList.toggle('active',p);
+    document.getElementById('btn-edit').classList.toggle('active',!p);
+    document.getElementById('btn-preview').classList.toggle('active',p);
+    ['size-ctrl','col-toggle','bind-toggle'].forEach(id=>
+      document.getElementById(id).style.display=p?'flex':'none');
+    ['paper-select','layout-btn','print-btn'].forEach(id=>
+      document.getElementById(id).style.display=p?'inline-block':'none');
+    if(!p && layoutOpen) toggleLayoutPanel();
+    if(p) renderPreview();
+  }
+
+  function updateCount() {
+    document.getElementById('char-count').textContent =
+      document.getElementById('text-input').value.replace(/[\r\n\s]/g,'').length.toLocaleString();
+  }
+  function syncPreview(){updateCount();if(currentTab==='preview')renderPreview();}
+
+  function escHtml(s){
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+  function splitHalf(paras){
+    const full=paras.join('\n'),half=full.length/2;
+    let acc=0,at=paras.length;
+    for(let i=0;i<paras.length;i++){acc+=paras[i].length+1;if(acc>=half){at=i+1;break;}}
+    return[paras.slice(0,at),paras.slice(at)];
+  }
+
+  function renderPreview(){
+    const text = document.getElementById('text-input').value.trim();
+    const paper = document.getElementById('preview-paper');
+    const note  = document.getElementById('page-note');
+    const [pw,ph] = PAPERS[currentPaper];
+
+    // mm → 用紙サイズに対する%
+    const toW = v => (v/pw*100).toFixed(2);
+    const toH = v => (v/ph*100).toFixed(2);
+
+    const pTop  = parseFloat(toH(mg.top));
+    const pBtm  = parseFloat(toH(mg.btm));   // 地余白そのまま（ノンブルはこの中に入れる）
+    const pNodo = parseFloat(toW(mg.nodo));
+    const pKogu = parseFloat(toW(mg.kogu));
+
+    // 右綴じ=ノドが右、左綴じ=ノドが左
+    const pRight = binding==='right' ? pNodo : pKogu;
+    const pLeft  = binding==='right' ? pKogu : pNodo;
+    const nodoSide = binding==='right' ? 'right' : 'left';
+    const nodoBandW = binding==='right' ? pNodo : pKogu;
+
+    const nodoBand = `<div class="nodo-band ${nodoSide}" style="width:${nodoBandW}%"></div>`;
+
+    // ノンブル：地余白の中央（地の上端から下へ少し）
+    // 地余白が pBtm%、用紙下端から bottom=(pBtm*0.5)% あたりが中心
+    const nombruBottom = (pBtm * 0.45).toFixed(2);
+    const nombru = `<div class="nombru" style="bottom:${nombruBottom}%">${pageNum}</div>`;
+
+    if(!text){
+      paper.innerHTML = nodoBand + '<span class="preview-empty">本文を入力すると<br>ここに縦書きで表示されます</span>';
+      note.textContent='';
+      return;
+    }
+
+    const fs = `font-family:${FONTS[currentFont]};font-size:${fontSize}px;`;
+    const bindLabel = binding==='right'?'右綴じ':'左綴じ';
+    const [w2,h2] = PAPERS[currentPaper];
+
+    // text-areaは本文のみ（ノンブルは地余白内に独立配置）
+    let content='';
+    const areaStyle = `top:${pTop}%;bottom:${pBtm}%;left:${pLeft}%;right:${pRight}%;`;
+    if(columns===1){
+      content = `<div class="text-area" style="${areaStyle}">
+        <div class="layout-1col"><div class="tategaki" style="${fs}">${escHtml(text)}</div></div>
+      </div>`;
+      note.innerHTML=`1段 ／ ${currentPaper}(${w2}×${h2}mm) ／ ${bindLabel}<br>天 ${(mg.top/10).toFixed(1)} 地 ${(mg.btm/10).toFixed(1)} ノド ${(mg.nodo/10).toFixed(1)} 小口 ${(mg.kogu/10).toFixed(1)} cm`;
+    } else {
+      const parts = splitHalf(text.split('\n'));
+      content = `<div class="text-area" style="${areaStyle}">
+        <div class="layout-2col">
+          <div class="col-half"><div class="tategaki" style="${fs}">${escHtml(parts[0].join('\n'))}</div></div>
+          <div class="col-half"><div class="tategaki" style="${fs}">${escHtml(parts[1].join('\n'))}</div></div>
+        </div>
+      </div>`;
+      note.innerHTML=`2段(上→下) ／ ${currentPaper}(${w2}×${h2}mm) ／ ${bindLabel}<br>天 ${(mg.top/10).toFixed(1)} 地 ${(mg.btm/10).toFixed(1)} ノド ${(mg.nodo/10).toFixed(1)} 小口 ${(mg.kogu/10).toFixed(1)} cm`;
+    }
+
+    paper.innerHTML = nodoBand + content + nombru;
+    paper.style.padding = '0';
+  }
+
+  function printPreview(){window.print();}
+
+  /* ── ファイルメニュー ── */
+  function toggleFileMenu(){
+    const dd = document.getElementById('file-dropdown');
+    const btn = document.getElementById('file-btn');
+    const isOpen = dd.classList.toggle('open');
+    btn.classList.toggle('open', isOpen);
+    btn.textContent = isOpen ? 'ファイル ▴' : 'ファイル ▾';
+    if(isOpen) document.addEventListener('click', closeFileMenuOutside, {once:true, capture:true});
+  }
+  function closeFileMenuOutside(e){
+    const wrap = document.getElementById('file-dropdown');
+    if(!wrap.contains(e.target)){
+      wrap.classList.remove('open');
+      document.getElementById('file-btn').classList.remove('open');
+      document.getElementById('file-btn').textContent = 'ファイル ▾';
+    }
+  }
+  function closeFileMenu(){
+    document.getElementById('file-dropdown').classList.remove('open');
+    document.getElementById('file-btn').classList.remove('open');
+    document.getElementById('file-btn').textContent = 'ファイル ▾';
+  }
+
+  // テキスト読み込み
+  function loadText(){
+    closeFileMenu();
+    document.getElementById('file-input').value='';
+    document.getElementById('file-input').click();
+  }
+  function onFileSelected(input){
+    const f = input.files[0]; if(!f) return;
+    const r = new FileReader();
+    r.onload = e => {
+      document.getElementById('text-input').value = e.target.result;
+      syncPreview();
+    };
+    r.readAsText(f, 'utf-8');
+  }
+
+  // テキスト保存
+  function saveText(){
+    closeFileMenu();
+    const text = document.getElementById('text-input').value;
+    const blob = new Blob([text], {type:'text/plain;charset=utf-8'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'draft.txt';
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }
+
+  // 設定をまとめたオブジェクトを返す
+  function getSettings(){
+    return {currentFont, fontSize, columns, currentPaper, binding, mg:{...mg}};
+  }
+  function applySettings(s){
+    if(!s) return;
+    currentFont  = s.currentFont  || 'shippori';
+    fontSize     = s.fontSize     || 16;
+    columns      = s.columns      || 1;
+    currentPaper = s.currentPaper || 'A4';
+    binding      = s.binding      || 'right';
+    if(s.mg) mg = {...mg, ...s.mg};
+
+    // UI反映
+    document.getElementById('font-select').value = currentFont;
+    document.getElementById('text-input').style.fontFamily = FONTS[currentFont];
+    document.getElementById('size-label').textContent = fontSize;
+    document.getElementById('paper-select').value = currentPaper;
+    const [w,h]=PAPERS[currentPaper];
+    document.getElementById('preview-paper').style.aspectRatio=`${w}/${h}`;
+    setColumns(columns);
+    setBinding(binding);
+    // 余白UI反映
+    ['top','btm','nodo','kogu'].forEach(k=>{
+      document.getElementById('m-'+k).value = mg[k];
+      document.getElementById('n-'+k).value = (mg[k]/10).toFixed(1);
+    });
+  }
+
+  // localStorageに保存
+  const LS_KEY = 'tategakiEditor_v1';
+  function saveToStorage(){
+    closeFileMenu();
+    const data = {
+      text: document.getElementById('text-input').value,
+      settings: getSettings(),
+      savedAt: new Date().toLocaleString('ja-JP')
+    };
+    localStorage.setItem(LS_KEY, JSON.stringify(data));
+    alert('ブラウザに保存しました（' + data.savedAt + '）');
+  }
+  function loadFromStorage(){
+    closeFileMenu();
+    const raw = localStorage.getItem(LS_KEY);
+    if(!raw){ alert('保存データが見つかりません'); return; }
+    const data = JSON.parse(raw);
+    if(data.text !== undefined) document.getElementById('text-input').value = data.text;
+    if(data.settings) applySettings(data.settings);
+    syncPreview();
+    alert('読み込みました（保存日時：' + (data.savedAt||'不明') + '）');
+  }
+  function clearStorage(){
+    closeFileMenu();
+    if(!confirm('保存データを削除しますか？')) return;
+    localStorage.removeItem(LS_KEY);
+    alert('削除しました');
+  }
+
+  // 起動時に自動復元（テキストと設定）
+  function autoRestore(){
+    const raw = localStorage.getItem(LS_KEY);
+    if(!raw) return;
+    try{
+      const data = JSON.parse(raw);
+      if(data.text) document.getElementById('text-input').value = data.text;
+      if(data.settings) applySettings(data.settings);
+      updateCount();
+    }catch(e){}
+  }
+
+  // 編集中は30秒ごとに自動保存
+  setInterval(()=>{
+    const text = document.getElementById('text-input').value;
+    if(!text) return;
+    const data = {text, settings:getSettings(), savedAt:new Date().toLocaleString('ja-JP')};
+    localStorage.setItem(LS_KEY, JSON.stringify(data));
+  }, 30000);
+
+  // 初期化
+  document.getElementById('text-input').style.fontFamily = FONTS[currentFont];
+  const [iw,ih]=PAPERS[currentPaper];
+  document.getElementById('preview-paper').style.aspectRatio=`${iw}/${ih}`;
+  autoRestore();
+  updateCount();
+</script>
+</body>
+</html>
