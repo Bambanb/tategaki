@@ -1,0 +1,13 @@
+{
+  "name": "縦書きエディタ",
+  "short_name": "縦書き",
+  "description": "同人誌向け縦書きエディタ・レイアウトプレビュー",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#f0eef6",
+  "theme_color": "#6b4fa0",
+  "orientation": "portrait",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
