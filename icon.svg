@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#7c5cbf"/>
+      <stop offset="100%" style="stop-color:#4a3080"/>
+    </linearGradient>
+    <linearGradient id="shine" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#ffffff;stop-opacity:0.18"/>
+      <stop offset="100%" style="stop-color:#ffffff;stop-opacity:0"/>
+    </linearGradient>
+  </defs>
+
+  <!-- 背景 -->
+  <rect width="512" height="512" rx="96" fill="url(#bg)"/>
+  <!-- 光沢 -->
+  <rect width="512" height="512" rx="96" fill="url(#shine)"/>
+
+  <!-- 原稿用紙風：縦罫線 3本 -->
+  <line x1="180" y1="90" x2="180" y2="370" stroke="rgba(255,255,255,0.22)" stroke-width="2"/>
+  <line x1="256" y1="90" x2="256" y2="370" stroke="rgba(255,255,255,0.22)" stroke-width="2"/>
+  <line x1="332" y1="90" x2="332" y2="370" stroke="rgba(255,255,255,0.22)" stroke-width="2"/>
+
+  <!-- 縦書きテキスト風：白い短冊 -->
+  <!-- 右列 -->
+  <rect x="334" y="108" width="28" height="28" rx="3" fill="white" opacity="0.9"/>
+  <rect x="334" y="148" width="28" height="28" rx="3" fill="white" opacity="0.75"/>
+  <rect x="334" y="188" width="28" height="28" rx="3" fill="white" opacity="0.75"/>
+  <rect x="334" y="228" width="28" height="28" rx="3" fill="white" opacity="0.75"/>
+  <rect x="334" y="268" width="28" height="28" rx="3" fill="white" opacity="0.6"/>
+  <rect x="334" y="308" width="28" height="28" rx="3" fill="white" opacity="0.6"/>
+
+  <!-- 中列 -->
+  <rect x="258" y="108" width="28" height="28" rx="3" fill="white" opacity="0.75"/>
+  <rect x="258" y="148" width="28" height="28" rx="3" fill="white" opacity="0.75"/>
+  <rect x="258" y="188" width="28" height="28" rx="3" fill="white" opacity="0.75"/>
+  <rect x="258" y="228" width="28" height="28" rx="3" fill="white" opacity="0.6"/>
+  <rect x="258" y="268" width="28" height="28" rx="3" fill="white" opacity="0.6"/>
+
+  <!-- 左列 -->
+  <rect x="182" y="108" width="28" height="28" rx="3" fill="white" opacity="0.6"/>
+  <rect x="182" y="148" width="28" height="28" rx="3" fill="white" opacity="0.6"/>
+  <rect x="182" y="188" width="28" height="28" rx="3" fill="white" opacity="0.5"/>
+  <rect x="182" y="228" width="28" height="28" rx="3" fill="white" opacity="0.5"/>
+
+  <!-- ペン -->
+  <g transform="translate(94, 340) rotate(-40, 40, 80)">
+    <!-- ペン軸 -->
+    <rect x="28" y="10" width="24" height="110" rx="4" fill="white" opacity="0.95"/>
+    <!-- ペン先 -->
+    <polygon points="28,120 52,120 40,148" fill="#c8a8f0" opacity="0.95"/>
+    <!-- キャップ -->
+    <rect x="26" y="6" width="28" height="18" rx="4" fill="#e0ccff" opacity="0.9"/>
+    <!-- クリップ -->
+    <rect x="50" y="10" width="5" height="70" rx="2" fill="#d0b0ff" opacity="0.8"/>
+  </g>
+
+  <!-- ノンブル風の丸 -->
+  <circle cx="256" cy="432" r="14" fill="rgba(255,255,255,0.35)"/>
+  <circle cx="256" cy="432" r="8" fill="rgba(255,255,255,0.7)"/>
+</svg>
